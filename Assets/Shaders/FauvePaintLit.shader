@@ -1,9 +1,5 @@
 Shader "Fauve/PaintLitPP"
 {
-    // Variante "post-process emulé" :
-    // 1) toutes les lumieres sont cumulees SANS bandes (comme le Lit natif d'Unreal)
-    // 2) les bandes + la teinte d'ombre sont appliquees UNE SEULE FOIS sur l'irradiance totale
-    //    (comme le fera le post-process Unreal)
     Properties
     {
         [MainTexture] _BaseMap("Base Map", 2D) = "white" {}
@@ -27,7 +23,6 @@ Shader "Fauve/PaintLitPP"
         [Toggle(_ALPHATEST_ON)] _AlphaClip("Alpha Clip", Float) = 0
         _Cutoff("Alpha Cutoff", Range(0,1)) = 0.5
 
-        // ---- Emulation du post-process ----
         [Enum(ExactIrradiance,0,EstimatedFromFinalColor,1)] _PPMode("PP Emulation Mode", Float) = 0
         _Bands("Light Bands", Range(2,6)) = 3
         _BandSoft("Band Softness", Range(0.005,0.3)) = 0.06
@@ -40,7 +35,6 @@ Shader "Fauve/PaintLitPP"
         _SpecIntensity("Spec Intensity", Range(0,3)) = 1.0
         _EnvBands("Analytic Env Bands", Range(2,8)) = 4
 
-        // ---- Reflets (metal, verre, liquide) ----
         [Enum(Analytic,0,UnityProbe,1,CustomCubemap,2)] _EnvMode("Reflection Source", Float) = 1
         _ReflStrength("Reflection Strength", Range(0,3)) = 1
         _ReflSaturation("Reflection Saturation", Range(0,2.5)) = 1.3
@@ -49,7 +43,6 @@ Shader "Fauve/PaintLitPP"
         _ReflMaxBright("Reflection Max Brightness", Range(1,20)) = 4
         _ReflMinBlur("Reflection Min Blur", Range(0,0.5)) = 0.12
 
-        // ---- Liquide (a combiner avec Refraction) ----
         [Toggle(_LIQUID)] _Liquid("Liquid", Float) = 0
         _LiquidColor("Liquid Color", Color) = (0.55,0.05,0.15,1)
         _LiquidDensity("Liquid Density", Range(0,12)) = 3
@@ -60,7 +53,6 @@ Shader "Fauve/PaintLitPP"
         _RimStrength("Rim Strength", Range(0,1)) = 0.5
         _OutlineColor("Outline Color", Color) = (0.12,0.05,0.25,1)
         _OutlineWidth("Outline Width ", Range(0,8)) = 2.5
-
         _StrokeScale("Stroke Density", Range(10,300)) = 70
         _StrokeStretch("Stroke Length", Range(1,12)) = 5
         _StrokeAngles("Stroke Angle Steps", Range(2,12)) = 6
@@ -85,12 +77,11 @@ Shader "Fauve/PaintLitPP"
         #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
         TEXTURE2D(_BaseMap); SAMPLER(sampler_BaseMap);
-        TEXTURE2D(_OpacityMap); SAMPLER(sampler_OpacityMap);
+        TEXTURE2D(_OpacityMap); SAMPLER(sampler_OpacityMap); //Pour les mesh qui ont différentes opacités comme la jar par exemple
         TEXTURE2D(_BumpMap); SAMPLER(sampler_BumpMap);
         TEXTURE2D(_MetallicMap); SAMPLER(sampler_MetallicMap);
         TEXTURE2D(_RoughMap); SAMPLER(sampler_RoughMap);
 
-        // Globaux (FauveEnvironment.cs)
         float4 _Fauve_SkyColor;
         float4 _Fauve_HorizonColor;
         float4 _Fauve_GroundColor;
@@ -216,8 +207,6 @@ Shader "Fauve/PaintLitPP"
                 return lerp(c, lightColor * 1.5, sun);
             }
 
-            // Equivalent du Lit natif Unreal : Lambert + GGX lisse, AUCUNE bande ici.
-            // On cumule l'irradiance (irr) et le speculaire (specAcc) de toutes les lumieres.
             void AccumLight(Light light, float3 N, float3 V, float rough, float3 F0,
                             inout float3 irr, inout float3 specAcc)
             {
@@ -311,7 +300,6 @@ Shader "Fauve/PaintLitPP"
                 float3 V = GetWorldSpaceNormalizeViewDir(i.positionWS);
                 float2 suv = GetNormalizedScreenSpaceUV(i.positionCS);
 
-                // ---- coup de pinceau (inchange) ----
                 float2 sp = i.positionCS.xy / _ScreenParams.y;
                 float3 Nv = TransformWorldToViewDir(N);
                 float raw = atan2(Nv.y, Nv.x) + PI * 0.5;
@@ -329,8 +317,6 @@ Shader "Fauve/PaintLitPP"
 
                 float3 F0 = lerp(float3(0.04, 0.04, 0.04), albedo, metallic);
 
-                // ---- ETAPE 1 : eclairage "natif", sans bandes ----
-                // Ambiant lisse (equivalent du Sky Light d'Unreal)
                 float3 ambient = lerp(_Fauve_GroundColor.rgb, _Fauve_SkyColor.rgb, N.y * 0.5 + 0.5) * _Fauve_AmbientIntensity;
 
                 float3 irr = 0;
@@ -366,10 +352,8 @@ Shader "Fauve/PaintLitPP"
                 float3 surfLayer = specAcc + refl;
 
                 float3 irradiance = ambient + irr;
-                float3 sceneC = albedo * irradiance * (1.0 - metallic) + surfLayer;   // ce que verrait le post-process
+                float3 sceneC = albedo * irradiance * (1.0 - metallic) + surfLayer; 
 
-                // ---- ETAPE 2 : "post-process" (bandes sur l'irradiance TOTALE) ----
-                // Mode 0 : irradiance exacte. Mode 1 : estimee depuis la couleur finale / albedo (comme le vrai PP).
                 float3 Eest = (_PPMode > 0.5) ? sceneC / max(albedo, 0.05) : irradiance;
                 float lE = dot(Eest, LUMA);
                 float t = saturate(lE / _BandKey) + (b - 0.5) * _BrushLightJitter;
