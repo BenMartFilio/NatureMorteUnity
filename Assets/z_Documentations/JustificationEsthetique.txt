@@ -1,0 +1,16 @@
+
+
+
+La jare a une matière transparente,
+Le crâne a une matière non-métallique,
+Le calice a une matière métallique,
+La dentelle a une matière avec un alpha clip (donc une matière de type masked)
+
+
+
+Ce qui a été modifié : les lumières et l'ombrages, le post process, la caméra, et les matières (notamment avec un shader personnalisé)
+
+Durant la création de ce shader, j'ai ajouter des paramètres, comme une outline pour les objets, afin de tester le rendu. Cette outline notamment est d'ores en avant à 0 car cela rendait mieux sans.
+Pour être plus facilement en raccort avec unreal, j'ai directement mis le paramètre roughness au lieu de softness.
+
+Parmi les paramètres présents il y a aussi ceux pour l'effet de pinceau (follow form pour suivre la forme du mesh ou pour être uniforme sur le trait, baseAngle et Stroke Angle Steps pour gérer l'orientation des coups de pinceau (baseAngle est en radian parce que c'est plus pratique), stroke density pour gérer le nombre de coup de pinceau (la densité), brush contrast pour gérer le contraste de ces coups de pinceau (à quel point ils sont visibles))
