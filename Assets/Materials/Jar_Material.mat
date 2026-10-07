@@ -146,7 +146,7 @@ Material:
     - _ReflSaturation: 1.3
     - _ReflStrength: 1
     - _Refract: 1
-    - _RefractStrength: 0.03
+    - _RefractStrength: 0
     - _RimPower: 3
     - _RimStrength: 0.5
     - _Roughness: 0.6
