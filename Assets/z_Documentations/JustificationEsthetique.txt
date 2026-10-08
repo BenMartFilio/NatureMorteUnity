@@ -1,6 +1,3 @@
-
-
-
 La jare a une matière transparente,
 Le crâne a une matière non-métallique,
 Le calice a une matière métallique,
@@ -8,9 +5,17 @@ La dentelle a une matière avec un alpha clip (donc une matière de type masked)
 
 
 
-Ce qui a été modifié : les lumières et l'ombrages, le post process, la caméra, et les matières (notamment avec un shader personnalisé)
+Ce qui a été modifié : les lumières et l'ombrages, le post process, la caméra, et les matières (notamment avec un shader personnalisé).
 
 Durant la création de ce shader, j'ai ajouter des paramètres, comme une outline pour les objets, afin de tester le rendu. Cette outline notamment est d'ores en avant à 0 car cela rendait mieux sans.
 Pour être plus facilement en raccort avec unreal, j'ai directement mis le paramètre roughness au lieu de softness.
 
-Parmi les paramètres présents il y a aussi ceux pour l'effet de pinceau (follow form pour suivre la forme du mesh ou pour être uniforme sur le trait, baseAngle et Stroke Angle Steps pour gérer l'orientation des coups de pinceau (baseAngle est en radian parce que c'est plus pratique), stroke density pour gérer le nombre de coup de pinceau (la densité), brush contrast pour gérer le contraste de ces coups de pinceau (à quel point ils sont visibles))
+Parmi les paramètres présents il y a aussi ceux pour l'effet de pinceau (follow form pour suivre la forme du mesh ou pour être uniforme sur le trait, baseAngle et Stroke Angle Steps pour gérer l'orientation des coups de pinceau (baseAngle est en radian parce que c'est plus pratique), stroke density pour gérer le nombre de coup de pinceau (la densité), brush contrast pour gérer le contraste de ces coups de pinceau (à quel point ils sont visibles)).
+
+J'ai aussi ajouté un ReflexionProbVolume sur unreal et unity afin d'avoir de meilleur réflexion métallique notamment. Ça m'a aussi permis d'utiliser un cubemap identique au deux moteur, afin d'obtenir les mêmes réflexions (en l'exportant de l'un à l'autre).
+
+
+Explication de pourquoi cela a échoué :
+Après avoir fait l'effet sur unity et avoir pris des notes sur les paramètres que j'avais modifié (éclairage, caméra, shaders etc.), je passe sur unreal. Ainsi, je replace la caméra et reproduit l'angle de vue (Fov, lens…), puis je commence à faire mes matières en faisant les mêmes choses que ce que j'avais fait sur unity. Cependant, connecter des nœuds prend plus de temps qu'écrire des lignes de code, et même si j'aurais pu utiliser des nœuds customs, ou faire écrire directement un shader, j'ai persisté sur les nœuds ce qui a été ma première erreur, me faisant perdre des heures à refaire la logique par nœuds. Une fois cela fini, j'ai été confronté à plusieurs limitation d'unreal par rapport à unity, comme la gestion des ombres et de la lumière pour lequel j'étais obligé de passer par un post-process au lieu de pouvoir le faire directement dans mon shader. Ce post process marchait moyennement en faisant à peu près la même chose, mais comme je n'avais qu'un seul post process je ne pouvais mettre qu'une seule variance de paramètre. Or, sur mes matières unity, j'ai mis des paramètres différents sur chacun de mes objets, donc j'ai essayé de faire passer ça par des stencils mais le nœud "postprocessinput:0" qui est censé donner le résultat du postprocess précédent, donne uniquement le résultat avant tout post process, ce qui annule mes post process précédents et m'empêche de faire des paramètres en fonction d'un paramètre ID (qui représente le stencil). 
+Ensuite, mon effet de trait avait plein de soucis, ce qui m'a pris beaucoup de temps pour régler une partie, cependant il y a toujours des problèmes, l'effet n'est pas bon, et je n'ai pas réussi à corriger ça dans les temps. Hélas j'ai persisté trop longtemps sur cette voie, ç'aura été mon problème durant ce devoir au lieu de tout recommencer sans cet effet trop compliqué à adapter.
+En tout cas, il vallait mieux faire cette erreur sur un exercice de ce type, afin d'expérimenter et de mieux comprendre les choses, plutôt que sur un travail plus sérieux, je ne regrette donc pas d'avoir commis ces fautes.
